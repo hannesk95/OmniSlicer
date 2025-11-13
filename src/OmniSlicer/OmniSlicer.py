@@ -106,7 +106,7 @@ def _create_rotation_matrices(vertices: np.ndarray):
                                       [ 0.,  1.,  0.]]))        
                                     
     else:
-        assert vertices.shape[0] >= 8, "Please make sure number of views is greater than 8 or equal to 1 or 3!"
+        # assert vertices.shape[0] >= 8, "Please make sure number of views is greater than 8 or equal to 1 or 3!"
     
         origin = np.array(vertices[0])
 
@@ -469,7 +469,7 @@ def extract_slices(volume_path: str = None, mask_path: str = None, output_dir: s
         mask_path (str): Path to the 3D segmentation mask file corresponding to the volume.
         output_dir (str): Directory path where the extracted slice images will be saved.
         n_views (int): Number of viewing angles for omnidirectional slice extraction. 
-                      Must be at least 3.
+                      Must be at least 4.
     Returns:
         None: The function saves extracted slices as PNG images to the specified output directory.
     Raises:
@@ -477,7 +477,7 @@ def extract_slices(volume_path: str = None, mask_path: str = None, output_dir: s
             - volume_path is None or the file doesn't exist
             - mask_path is None or the file doesn't exist  
             - output_dir is None
-            - n_views is None or less than 3
+            - n_views is None or less than 4
             - CUDA is not available on the system
     Notes:
         - Requires CUDA-capable GPU for 3D tensor rotations
@@ -500,7 +500,7 @@ def extract_slices(volume_path: str = None, mask_path: str = None, output_dir: s
     assert os.path.exists(mask_path), f"The specified mask path does not exist: {mask_path}"
     assert output_dir is not None, "Please provide a valid output directory."
     assert n_views is not None, "Please provide the number of views for OmniSlicer."
-    assert n_views >= 3, "Number of views must be at least 3."
+    assert n_views >= 4, "Number of views must be at least 4."
     assert torch.cuda.is_available(), "CUDA is not available. Please run on a machine with a CUDA-capable GPU."
 
     if not os.path.exists(output_dir):

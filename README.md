@@ -20,6 +20,24 @@ OmniSlicer.extract_slices(volume_path=volume_path,
                           n_views=n_views)
 ```
 
+## Tested Dependencies
+
+The functionality of **OmniSlicer** has been successfully validated using the following dependency versions. These represent the environment in which the package has been developed and tested:
+
+| Dependency     | Version Tested |
+|----------------|----------------|
+| `python`       | 3.11.14        |
+| `torch`        | 2.6.0+cu124    |
+| `torchvision`  | 0.21.0+cu124   |
+| `trimesh`      | 4.6.8          |
+| `numpy`        | 2.2.6          |
+| `pyvista`      | 0.45.0         |
+| `torchio`      | 0.20.7         |
+| `tqdm`         | 4.67.1         |
+
+These versions are defined in the project’s installation requirements and are automatically resolved when installing OmniSlicer via `pip`. While other combinations may work, the dependency set above is the configuration against which all core features have been verified. **Please make sure that you install torch with CUDA**.
+
+
 ## Citation
 
 Stay tuned, coming soon!

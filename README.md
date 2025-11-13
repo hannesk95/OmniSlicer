@@ -1,10 +1,10 @@
-# OmniSlicer 
+# Omnidirectional Volume Slicer - OmniSlicer 
 
-Implementation of the omnidirectional volume slicer package in Python and PyTorch for 3D medical images, from our publication ["TomoGraphView: 3D Medical Image Classification with Omnidirectional Slice Representations and Graph Neural Networks"](www.arxiv.org).
+Implementation of the omnidirectional volume slicer package in Python and PyTorch for 3D medical image analysis, from our publication ["TomoGraphView: 3D Medical Image Classification with Omnidirectional Slice Representations and Graph Neural Networks"](www.arxiv.org).
 
 ![Comparison of OmniSlicer against traditional methods](./assets/volume_slicing.png)
 
-## Example
+## Example Usage
 
 ```python
 from OmniSlicer import OmniSlicer

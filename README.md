@@ -1,8 +1,10 @@
 # OmniSlicer 
 
-Implementation of the omnidirectional volume slicer in PyTorch for 3D medical images. 
+Implementation of the omnidirectional volume slicer package in Python and PyTorch for 3D medical images, from our publication ["TomoGraphView: 3D Medical Image Classification with Omnidirectional Slice Representations and Graph Neural Networks"](www.arxiv.org).
 
-## How to use?
+![Comparison of OmniSlicer against traditional methods](./assets/volume_slicing.png)
+
+## Example
 
 ```python
 from OmniSlicer import OmniSlicer
@@ -18,12 +20,12 @@ OmniSlicer.extract_slices(volume_path=volume_path,
                           n_views=n_views)
 ```
 
-## Citations
+## Citation
 
 Stay tuned, coming soon!
 
 <!-- ```bibtex
-@inproceedings{polat2022class,
+@inproceedings{kiechle2025omnignn,
   title={Class distance weighted cross-entropy loss for ulcerative colitis severity estimation},
   author={Polat, Gorkem and Ergenc, Ilkay and Kani, Haluk Tarik and Alahdab, Yesim Ozen and Atug, Ozlen and Temizel, Alptekin},
   booktitle={Annual Conference on Medical Image Understanding and Analysis},

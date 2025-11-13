@@ -12,6 +12,31 @@ from torchvision import transforms
 __all__ = ["extract_slices"]
 
 def _calculate_rotation_matrix(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
+    """
+    Calculate the rotation matrix that rotates vector v1 to align with vector v2.
+    This function computes the 3D rotation matrix using Rodrigues' rotation formula.
+    The rotation is performed around the axis perpendicular to both input vectors,
+    with the minimum angle required to align v1 with v2.
+    Args:
+        v1 (np.ndarray): Source vector of shape (3,) to be rotated.
+        v2 (np.ndarray): Target vector of shape (3,) to align with.
+    Returns:
+        np.ndarray: 3x3 rotation matrix that transforms v1 to align with v2.
+                   Returns identity matrix if vectors are already aligned.
+    Notes:
+        - Input vectors are automatically normalized before computation.
+        - Uses Rodrigues' rotation formula: R = I + sin(θ)K + (1-cos(θ))K²
+        - Where K is the skew-symmetric matrix of the rotation axis.
+        - Handles edge case where vectors are identical (returns identity matrix).
+    Examples:
+        >>> v1 = np.array([1, 0, 0])
+        >>> v2 = np.array([0, 1, 0])
+        >>> R = _calculate_rotation_matrix(v1, v2)
+        >>> # R rotates v1 to align with v2
+    """
+
+
+
     # Normalize the vectors
     v1 = v1 / np.linalg.norm(v1)
     v2 = v2 / np.linalg.norm(v2)
@@ -43,6 +68,29 @@ def _calculate_rotation_matrix(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
     return R
 
 def _create_rotation_matrices(vertices: np.ndarray):
+    """
+    Create rotation matrices based on the provided vertices configuration.
+    This function generates rotation matrices for different viewing configurations:
+    - Single vertex: No rotation matrices generated
+    - Three vertices: Returns predefined rotation matrices for standard orthogonal views
+    - Multiple vertices (≥8): Computes rotation matrices from origin to each subsequent vertex
+    Args:
+        vertices (np.ndarray): Array of vertex coordinates with shape (n, 3) where n is the
+                              number of vertices. Each row represents a 3D point [x, y, z].
+                              Must have 1, 3, or ≥8 vertices.
+    Returns:
+        list: List of rotation matrices as numpy arrays. Each matrix is 3x3 and represents
+              a rotation transformation. Returns empty list for single vertex case.
+    Raises:
+        AssertionError: If the number of vertices is not 1, 3, or ≥8.
+    Note:
+        For the 3-vertex case, the function returns two predefined rotation matrices
+        corresponding to standard orthogonal viewing directions. For multiple vertices
+        (≥8), it uses the first vertex as origin and calculates rotation matrices
+        to align with each subsequent vertex position.
+    """
+
+
 
     rot_matrices = []
     if vertices.shape[0] == 1:
@@ -69,6 +117,29 @@ def _create_rotation_matrices(vertices: np.ndarray):
     return rot_matrices
 
 def _find_largest_lesion_slice(mask: torch.Tensor, axis: int) -> int:
+    """
+    Find the slice index with the largest lesion area along a specified axis.
+    This function analyzes a 3D binary mask tensor to identify which slice
+    contains the maximum lesion area (defined as the number of non-zero voxels)
+    when viewed along the specified axis.
+    Args:
+        mask (torch.Tensor): A 3D binary tensor representing the lesion mask.
+                           Non-zero values indicate lesion presence.
+        axis (int): The axis along which to analyze slices. Must be 0, 1, or 2
+                   corresponding to the three spatial dimensions.
+    Returns:
+        int: The index of the slice with the largest lesion area along the
+             specified axis.
+    Raises:
+        AssertionError: If mask is not a 3D tensor or if axis is not 0, 1, or 2.
+    Example:
+        >>> mask = torch.zeros(10, 20, 30)
+        >>> mask[5, 10:15, 15:20] = 1  # Create lesion in slice 5 along axis 0
+        >>> _find_largest_lesion_slice(mask, axis=0)
+        5
+    """
+
+
     assert mask.ndim == 3, "Mask must be a 3D tensor"
     assert axis in [0, 1, 2], "Axis must be 0, 1, or 2"
 
@@ -164,15 +235,40 @@ def _rotate_3d_tensor_around_center(tensor: torch.Tensor, rotation_matrix: torch
 
 def _crop_to_square(array, mask):
     """
-    Crops a 2D array to a square region around the ROI defined by a binary mask.
-
-    Parameters:
-        array (np.ndarray): The input 2D array.
-        mask (np.ndarray): The binary mask with the ROI (same shape as the array).
-
-    Returns:
-        np.ndarray: The cropped square array.
+    Crop a 2D array to a square region based on the bounding box of a binary mask.
+    This function finds the bounding box of the region of interest (ROI) defined by the mask,
+    then creates a square crop centered on this bounding box. The square size is determined
+    by the larger dimension of the bounding box, expanded by 10% for padding.
+    Parameters
+    ----------
+    array : numpy.ndarray
+        2D input array to be cropped.
+    mask : numpy.ndarray
+        2D binary mask array of the same shape as `array`. Values > 0 are considered
+        as the region of interest.
+    Returns
+    -------
+    numpy.ndarray
+        Cropped square region from the input array. The dimensions of the returned array
+        will be square, with size determined by the larger dimension of the ROI bounding box
+        multiplied by 1.1 (rounded down to nearest integer).
+    Notes
+    -----
+    - The function ensures the cropped region stays within the bounds of the original array.
+    - If the desired square size exceeds the array boundaries, the function adjusts the
+      crop region to maintain the largest possible square while staying within bounds.
+    - The mask is automatically converted to binary (values > 0 become True).
+    Examples
+    --------
+    >>> import numpy as np
+    >>> array = np.random.rand(100, 100)
+    >>> mask = np.zeros((100, 100))
+    >>> mask[30:50, 40:60] = 1  # Create ROI
+    >>> cropped = _crop_to_square(array, mask)
+    >>> print(cropped.shape)  # Should be approximately (22, 22) due to 1.1x expansion
     """
+    
+
     # Ensure the mask is binary
     mask = mask > 0
 
@@ -220,15 +316,28 @@ def _crop_to_square(array, mask):
 
 def _pad_to_square(array, padding_value=0):
     """
-    Pads a 2D array to make it square by adding padding with the specified value.
-
-    Parameters:
-        array (np.ndarray): The input 2D array.
-        padding_value: The value used for padding.
-
+    Pad a 2D array to make it square by adding padding to the shorter dimension.
+    This function takes a 2D numpy array and pads it with a specified value to create
+    a square array. Padding is added to the bottom and right edges as needed.
+    Args:
+        array (numpy.ndarray): A 2D numpy array to be padded.
+        padding_value (int or float, optional): The value to use for padding. 
+            Defaults to 0.
     Returns:
-        np.ndarray: The padded square array.
+        numpy.ndarray: A square 2D array with dimensions equal to the maximum 
+            of the original array's height and width.
+    Example:
+        >>> import numpy as np
+        >>> arr = np.array([[1, 2], [3, 4], [5, 6]])
+        >>> padded = _pad_to_square(arr)
+        >>> print(padded)
+        [[1 2 0]
+         [3 4 0]
+         [5 6 0]]
+    Note:
+        This is a private function intended for internal use within the module.
     """
+    
     rows, cols = array.shape
     size = max(rows, cols)  # Determine the size for the square matrix
 
@@ -246,6 +355,32 @@ def _pad_to_square(array, padding_value=0):
     return padded_array
 
 def _create_sphere(n_views: int, output_dir: str, save_sphere: bool = True):
+    """
+    Create or load a sphere mesh with optimally distributed points using Coulomb repulsion.
+    This function generates a spherical mesh with a specified number of views by placing points
+    on a unit sphere and optimizing their distribution using Coulomb repulsion forces. Three
+    points are fixed along the coordinate axes, while the remaining points are optimized to
+    minimize energy and achieve uniform distribution.
+    Args:
+        n_views (int): Total number of viewpoints/vertices to place on the sphere. Must be >= 3.
+        output_dir (str): Directory path where the sphere data will be saved/loaded from.
+        save_sphere (bool, optional): Whether to export the generated sphere as a PLY file.
+            Defaults to True.
+    Returns:
+        tuple[np.ndarray, np.ndarray]: A tuple containing:
+            - vertices (np.ndarray): Array of shape (N, 3) containing the 3D coordinates
+              of the sphere vertices.
+            - faces (np.ndarray): Array of shape (M, 3) containing the triangular faces
+              of the sphere mesh, where each row contains indices into the vertices array.
+    Notes:
+        - The function caches results as PyTorch tensors in the format "sphere_{n_views}_views.pt"
+        - Three points are fixed at [1,0,0], [0,1,0], and [0,0,1] for consistency
+        - Uses Delaunay triangulation to create the mesh surface from optimized points
+        - Coulomb repulsion optimization runs for 10,000 steps with learning rate 0.01
+        - If save_sphere is True, exports the mesh as "sphere_{n_views}_views.ply"
+    Raises:
+        ValueError: If n_views < 3 (implicitly, as fixed points require minimum 3 views)
+    """
     
     def normalize(v):
         return v / np.linalg.norm(v, axis=1, keepdims=True)
@@ -323,6 +458,41 @@ def _create_sphere(n_views: int, output_dir: str, save_sphere: bool = True):
     return vertices, faces
 
 def extract_slices(volume_path: str = None, mask_path: str = None, output_dir: str = None, n_views: int = None):
+    """
+    Extract omnidirectional 2D slices from a 3D medical volume and corresponding mask.
+    This function processes a 3D medical volume and its associated segmentation mask to generate
+    multiple 2D slice views from different orientations. The slices are extracted by rotating
+    the volume around uniformly distributed viewpoints on a sphere and finding the slice with
+    the largest lesion area for each rotation.
+    Args:
+        volume_path (str): Path to the 3D medical volume file (e.g., NIfTI format).
+        mask_path (str): Path to the 3D segmentation mask file corresponding to the volume.
+        output_dir (str): Directory path where the extracted slice images will be saved.
+        n_views (int): Number of viewing angles for omnidirectional slice extraction. 
+                      Must be at least 3.
+    Returns:
+        None: The function saves extracted slices as PNG images to the specified output directory.
+    Raises:
+        AssertionError: If any of the following conditions are not met:
+            - volume_path is None or the file doesn't exist
+            - mask_path is None or the file doesn't exist  
+            - output_dir is None
+            - n_views is None or less than 3
+            - CUDA is not available on the system
+    Notes:
+        - Requires CUDA-capable GPU for 3D tensor rotations
+        - The function automatically resamples the mask to match the volume resolution
+        - Volumes are normalized to canonical orientation and isotropic spacing (1.0mm³)
+        - Output images are cropped to square format and normalized to 0-255 range
+        - The first slice extracted is from the original volume (z-axis), followed by rotated views
+    Example:
+        >>> extract_slices(
+        ...     volume_path="/path/to/volume.nii.gz",
+        ...     mask_path="/path/to/mask.nii.gz", 
+        ...     output_dir="/path/to/output",
+        ...     n_views=12
+        ... )
+    """    
 
     assert volume_path is not None, "Please provide a valid path to the 3D volume."
     assert os.path.exists(volume_path), f"The specified volume path does not exist: {volume_path}"

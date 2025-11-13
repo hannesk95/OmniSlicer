@@ -330,6 +330,7 @@ def extract_slices(volume_path: str = None, mask_path: str = None, output_dir: s
     assert os.path.exists(mask_path), f"The specified mask path does not exist: {mask_path}"
     assert output_dir is not None, "Please provide a valid output directory."
     assert n_views is not None, "Please provide the number of views for OmniSlicer."
+    assert n_views >= 3, "Number of views must be at least 3."
     assert torch.cuda.is_available(), "CUDA is not available. Please run on a machine with a CUDA-capable GPU."
 
     if not os.path.exists(output_dir):

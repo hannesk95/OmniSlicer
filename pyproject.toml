@@ -1,6 +1,6 @@
 [project]
 name = "OmniSlicer"
-version = "0.0.4"
+version = "0.0.5"
 authors = [
   { name="Johannes Kiechle", email="johannes.kiechle@tum.de" },
 ]
@@ -14,10 +14,6 @@ classifiers = [
 license = "MIT"
 license-files = ["LICEN[CS]E*"]
 
-[project.urls]
-Homepage = "https://github.com/hannesk95/OmniSlicer"
-
-# 👇 This is where you list dependencies
 dependencies = [
   "torch>=2.6.0",
   "trimesh>=4.6.8",
@@ -25,5 +21,8 @@ dependencies = [
   "pyvista>=0.45.0",
   "torchio>=0.20.7",
   "tqdm>=4.67.1",
-  "torchvision>=0.21.0"
+  "torchvision>=0.21.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/hannesk95/OmniSlicer"

@@ -42,13 +42,14 @@ These versions are defined in the project’s installation requirements and are 
 
 Stay tuned, coming soon!
 
-<!-- ```bibtex
-@inproceedings{kiechle2025omnignn,
-  title={Class distance weighted cross-entropy loss for ulcerative colitis severity estimation},
-  author={Polat, Gorkem and Ergenc, Ilkay and Kani, Haluk Tarik and Alahdab, Yesim Ozen and Atug, Ozlen and Temizel, Alptekin},
-  booktitle={Annual Conference on Medical Image Understanding and Analysis},
-  pages={157--171},
-  year={2022},
-  organization={Springer}
+```bibtex
+@misc{kiechle2025tomographview3dmedicalimage,
+      title={TomoGraphView: 3D Medical Image Classification with Omnidirectional Slice Representations and Graph Neural Networks}, 
+      author={Johannes Kiechle and Stefan M. Fischer and Daniel M. Lang and Cosmin I. Bercea and Matthew J. Nyflot and Lina Felsner and Julia A. Schnabel and Jan C. Peeken},
+      year={2025},
+      eprint={2511.09605},
+      archivePrefix={arXiv},
+      primaryClass={eess.IV},
+      url={https://arxiv.org/abs/2511.09605}, 
 }
-``` -->
+```

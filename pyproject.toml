@@ -1,6 +1,6 @@
 [project]
 name = "OmniSlicer"
-version = "0.0.6"
+version = "0.0.7"
 authors = [
   { name="Johannes Kiechle", email="johannes.kiechle@tum.de" },
 ]

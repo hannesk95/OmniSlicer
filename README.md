@@ -40,8 +40,6 @@ These versions are defined in the project’s installation requirements and are 
 
 ## Citation
 
-Stay tuned, coming soon!
-
 ```bibtex
 @misc{kiechle2025tomographview3dmedicalimage,
       title={TomoGraphView: 3D Medical Image Classification with Omnidirectional Slice Representations and Graph Neural Networks}, 

@@ -11,7 +11,7 @@ from OmniSlicer import OmniSlicer
 
 volume_path = "path/to/volume.nii.gz" 
 mask_path = "path/to/mask.nii.gz" 
-output_dir = "output_dir"
+output_dir = "path/to/output_dir"
 n_views = N
 
 OmniSlicer.encode_volumes(
@@ -19,7 +19,7 @@ OmniSlicer.encode_volumes(
   mask_list=[mask_path],       # you can pass a list of several segmentation mask paths here
   output_dir=output_dir,
   n_views=n_views,
-  model_name="facebook/dinov3-vits16-pretrain-lvd1689m"
+  model_name="facebook/dinov3-vits16-pretrain-lvd1689m"  # currently, choose from any official facebook/dinov2 or facebook/dinov3 model available on huggingface
 )
 ```
 

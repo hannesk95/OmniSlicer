@@ -1,6 +1,6 @@
 [project]
 name = "OmniSlicer"
-version = "0.0.7"
+version = "0.0.11"
 authors = [
   { name="Johannes Kiechle", email="johannes.kiechle@tum.de" },
 ]
@@ -22,6 +22,7 @@ dependencies = [
   "torchio>=0.20.7",
   "tqdm>=4.67.1",
   "torchvision>=0.21.0",
+  "transformers>=5.21.0",
 ]
 
 [project.urls]

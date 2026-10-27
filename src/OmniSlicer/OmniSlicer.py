@@ -1,4 +1,5 @@
 import os
+import time
 import torch
 import trimesh
 import numpy as np
@@ -7,9 +8,15 @@ import torchio as tio
 import torch.nn.functional as F
 
 from tqdm import tqdm
+from PIL import Image
 from torchvision import transforms
+from transformers import AutoImageProcessor, AutoModel
+import os
+import contextlib
 
-__all__ = ["extract_slices"]
+# __all__ = ["extract_slices"]
+
+
 
 def _calculate_rotation_matrix(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
     """
@@ -419,7 +426,7 @@ def _create_sphere(n_views: int, output_dir: str, save_sphere: bool = True):
     N = n_views
 
     if not os.path.exists(os.path.join(output_dir, f"sphere_{N}_views.pt")):
-        print(f"Creating sphere with {N} views...")
+        # print(f"Creating sphere with {N} views...")
 
         # Fixed points
         fixed_points = np.array([
@@ -446,7 +453,7 @@ def _create_sphere(n_views: int, output_dir: str, save_sphere: bool = True):
         torch.save(vertices_faces, os.path.join(output_dir, f"sphere_{N}_views.pt"))
     
     else:
-        print(f"Loading sphere with {N} views...")
+        # print(f"Loading sphere with {N} views...")
         vertices_faces = torch.load(os.path.join(output_dir, f"sphere_{N}_views.pt"), weights_only=False)
         vertices = vertices_faces["vertices"]
         faces = vertices_faces["faces"]
@@ -457,7 +464,7 @@ def _create_sphere(n_views: int, output_dir: str, save_sphere: bool = True):
 
     return vertices, faces
 
-def extract_slices(volume_path: str = None, mask_path: str = None, output_dir: str = None, n_views: int = None):
+def _extract_slices(volume_path: str = None, mask_path: str = None, output_dir: str = None, n_views: int = None):
     """
     Extract omnidirectional 2D slices from a 3D medical volume and corresponding mask.
     This function processes a 3D medical volume and its associated segmentation mask to generate
@@ -494,6 +501,17 @@ def extract_slices(volume_path: str = None, mask_path: str = None, output_dir: s
         ... )
     """    
 
+    print("\n\n*************************************************************************************************************************************************")
+    print("*  Please cite the following paper when using OmniSlicer:\n"
+          "* \n"
+          "*  Kiechle, Johannes, Stefan M. Fischer, Daniel M. Lang, Cosmin I. Bercea, Matthew J. Nyflot, Lina Felsner, Julia A. Schnabel, and Jan C. Peeken.\n"
+          "*  TomoGraphView: 3D Medical Image Classification with Omnidirectional Slice Representations and Graph Neural Networks.\n"
+          "*  Medical Image Analysis (2026), p.104174.")
+    print("*************************************************************************************************************************************************\n")
+    time.sleep(3)
+
+    print("[INFO] If you run OmniSlicer for the first time, it may take a few moments to set up everything in the background. Please hang on!\n")
+    
     assert volume_path is not None, "Please provide a valid path to the 3D volume."
     assert os.path.exists(volume_path), f"The specified volume path does not exist: {volume_path}"
     assert mask_path is not None, "Please provide a valid path to the 3D mask."
@@ -510,6 +528,7 @@ def extract_slices(volume_path: str = None, mask_path: str = None, output_dir: s
     rot_matrices = _create_rotation_matrices(vertices=vertices)  
 
     filename = os.path.basename(volume_path).split(".")[0]  
+    identifier = os.path.basename(volume_path).split("_")[0]
 
     img = tio.ScalarImage(volume_path)
     seg = tio.LabelMap(mask_path)
@@ -542,18 +561,81 @@ def extract_slices(volume_path: str = None, mask_path: str = None, output_dir: s
         seg_slices.append(seg_tensor_rotated[:, :, idx_slice])
 
     i = 0
-    for img_slice, seg_slice in tqdm(zip(img_slices, seg_slices), total=len(img_slices), desc="Saving slices"):
+    img_paths = []
+    for img_slice, seg_slice in zip(img_slices, seg_slices):
         img_slice = img_slice.numpy()
         img_slice = _crop_to_square(img_slice, mask=seg_slice.numpy())
         # img_slice = _pad_to_square(img_slice, padding_value=0)
         img_slice = (img_slice - img_slice.min()) / (img_slice.max() - img_slice.min())
         img_slice = (img_slice * 255).astype(np.uint8)
         img_pil = transforms.ToPILImage()(img_slice)
-        img_pil.save(os.path.join(output_dir, f"{filename}_omnislicer_output_image_{i}.png"), format="PNG")
+
+        img_path = os.path.join(output_dir, f"{identifier}_slice_{str(i).zfill(3)}.png")
+        img_pil.save(img_path, format="PNG")
+        img_paths.append(img_path)
         i += 1        
+
+    return img_paths
     
-    print("\n")
-    print("#####################################################################################")
-    print(f"[INFO] Extracted {len(img_slices)} omnidirectional slices and saved to {output_dir}.")
-    print("#####################################################################################")
-    print("\n")
+    # print("\n")
+    # print("#####################################################################################")
+    # print(f"[INFO] Extracted {len(img_slices)} omnidirectional slices and saved to {output_dir}.")
+    # print("#####################################################################################")
+    # print("\n")
+
+
+def _save_encodings(img_list: list, model_name: str = "facebook/dinov3-vit7b16-pretrain-lvd1689m"):    
+
+
+    assert isinstance(img_list, list), "img_list must be a list of image file paths."
+    assert model_name in ["facebook/dinov2-small",
+                          "facebook/dinov2-base",
+                          "facebook/dinov2-large",
+                          "facebook/dinov2-giant",
+                          "facebook/dinov3-vits16-pretrain-lvd1689m",
+                          "facebook/dinov3-vitb16-pretrain-lvd1689m",
+                          "facebook/dinov3-vitl16-pretrain-lvd1689m",
+                          "facebook/dinov3-vit7b16-pretrain-lvd1689m",
+                          ], f"Model {model_name} not supported."
+
+    with open(os.devnull, "w") as null_output:
+        with contextlib.redirect_stdout(null_output), contextlib.redirect_stderr(null_output):
+            processor = AutoImageProcessor.from_pretrained(model_name)
+            model = AutoModel.from_pretrained(model_name)
+
+    for img in img_list:
+        base_path = os.path.dirname(img)
+        identifier = os.path.basename(img).split("_")[0]
+        img_slice = os.path.basename(img).split("_")[-1]
+        image = Image.open(img)
+        inputs = processor(images=image, return_tensors="pt")
+        inputs = inputs.to('cuda')
+        model = model.to('cuda')
+        outputs = model(**inputs)
+        embedding = outputs.pooler_output.cpu().detach()
+        torch.save(embedding, os.path.join(base_path, f"{identifier}_embedding_{str(img_slice).zfill(3)}.pt").replace(".png", ""))
+
+    
+def encode_volumes(volume_list: list = None, mask_list: list = None, output_dir: str = None, n_views: int = None, 
+                   model_name: str = None):
+    
+
+    assert volume_list is not None, "volume_list must be provided."
+    assert mask_list is not None, "mask_list must be provided."
+    assert output_dir is not None, "output_dir must be provided."
+    assert n_views is not None, "n_views must be provided."
+    assert model_name is not None, "model_name must be provided."
+
+    assert isinstance(volume_list, list), "volume_list must be a list of volume file paths."
+    assert isinstance(mask_list, list), "mask_list must be a list of mask file paths or None."
+    assert isinstance(output_dir, str), "output_dir must be a string specifying the output directories."
+    assert isinstance(n_views, int), "n_views must be an integer."
+
+    for volume, mask in tqdm(zip(volume_list, mask_list), total=len(volume_list), desc="Encoding volumes"):
+        assert os.path.exists(volume), f"Volume file {volume} does not exist."
+        assert os.path.exists(mask), f"Mask file {mask} does not exist."
+
+        img_list = _extract_slices(volume, mask, output_dir, n_views)
+        _save_encodings(img_list, model_name)
+
+    print("\n[INFO] Encoding completed successfully. Output saved to: {}\n".format(output_dir))
